@@ -1,0 +1,12 @@
+node_modules
+.next
+build
+dist
+.cache
+.env
+*.log
+*.apk
+*.aab
+*.exe
+*.zip
+coverage
