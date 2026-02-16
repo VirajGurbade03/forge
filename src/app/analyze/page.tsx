@@ -213,7 +213,7 @@ function AnalyzeContent() {
                             <Lock size={64} style={{ margin: '0 auto' }} />
                         </div>
                         <h2 style={{ marginBottom: '1rem' }}>Upgrade to Forge Pro</h2>
-                        <p style={{ color: 'var(--text-light)', marginBottom: '2rem' }}>You've reached your free limit or this is a premium feature. Unlock unlimited analysis, AI optimization, and PDF downloads.</p>
+                        <p style={{ color: 'var(--text-light)', marginBottom: '2rem' }}>You&apos;ve reached your free limit or this is a premium feature. Unlock unlimited analysis, AI optimization, and PDF downloads.</p>
                         <div style={{ backgroundColor: 'var(--primary-light)', padding: '1.5rem', borderRadius: 'var(--radius)', marginBottom: '2rem', textAlign: 'left' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}>
                                 <ShieldCheck size={20} color="var(--primary)" /> <span>Unlimited AI Analysis</span>
