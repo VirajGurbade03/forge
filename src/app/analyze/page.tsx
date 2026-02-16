@@ -175,29 +175,75 @@ function AnalyzeContent() {
         }
     };
 
-    const handleUpgrade = () => {
-        const options = {
-            key: "rzp_test_YOUR_KEY_HERE", // Mock key
-            amount: 29900,
-            currency: "INR",
-            name: "Forge AI",
-            description: "Pro Plan Upgrade",
-            handler: function (response: any) {
-                localStorage.setItem('forge_is_pro', 'true');
-                setIsPro(true);
-                setShowPaywall(false);
-                alert("Payment Successful! You are now a Pro user.");
-            },
-            prefill: {
-                name: "User Name",
-                email: "user@example.com"
-            },
-            theme: {
-                color: "#2563eb"
-            }
-        };
-        const rzp = new (window as any).Razorpay(options);
-        rzp.open();
+    const handleUpgrade = async () => {
+        const plan = searchParams.get('plan') || 'pro';
+        const amount = plan === 'premium' ? 49900 : 29900;
+
+        try {
+            // 1. Create Order
+            const orderResponse = await fetch('/api/razorpay/order', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ amount, plan }),
+            });
+
+            if (!orderResponse.ok) throw new Error('Order creation failed');
+            const orderData = await orderResponse.json();
+
+            // 2. Open Razorpay Checkout
+            const options = {
+                key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_live_SGmiLu2M4FOFj4",
+                amount: orderData.amount,
+                currency: orderData.currency,
+                name: "Forge AI",
+                description: `${plan.toUpperCase()} Plan Upgrade`,
+                order_id: orderData.id,
+                handler: async function (response: any) {
+                    // 3. Verify Payment
+                    try {
+                        const verifyResponse = await fetch('/api/razorpay/verify', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                razorpay_order_id: response.razorpay_order_id,
+                                razorpay_payment_id: response.razorpay_payment_id,
+                                razorpay_signature: response.razorpay_signature,
+                            }),
+                        });
+
+                        const verifyData = await verifyResponse.json();
+
+                        if (verifyData.success) {
+                            localStorage.setItem('forge_is_pro', 'true');
+                            setIsPro(true);
+                            setShowPaywall(false);
+                            alert("Payment Successful! You are now a Pro user.");
+                        } else {
+                            alert("Payment verification failed. Please contact support.");
+                        }
+                    } catch (error) {
+                        console.error('Verification error:', error);
+                        alert("An error occurred during verification.");
+                    }
+                },
+                prefill: {
+                    name: "User Name",
+                    email: "user@example.com"
+                },
+                theme: {
+                    color: "#2563eb"
+                }
+            };
+
+            const rzp = new (window as any).Razorpay(options);
+            rzp.on('payment.failed', function (response: any) {
+                alert("Payment Failed: " + response.error.description);
+            });
+            rzp.open();
+        } catch (error) {
+            console.error('Upgrade failed:', error);
+            alert('Failed to initiate payment. Please try again.');
+        }
     };
 
     return (
@@ -212,7 +258,7 @@ function AnalyzeContent() {
                         <div style={{ marginBottom: '1.5rem', color: 'var(--primary)' }}>
                             <Lock size={64} style={{ margin: '0 auto' }} />
                         </div>
-                        <h2 style={{ marginBottom: '1rem' }}>Upgrade to Forge Pro</h2>
+                        <h2 style={{ marginBottom: '1rem', textTransform: 'capitalize' }}>Upgrade to Forge {searchParams.get('plan') || 'pro'}</h2>
                         <p style={{ color: 'var(--text-light)', marginBottom: '2rem' }}>You&apos;ve reached your free limit or this is a premium feature. Unlock unlimited analysis, AI optimization, and PDF downloads.</p>
                         <div style={{ backgroundColor: 'var(--primary-light)', padding: '1.5rem', borderRadius: 'var(--radius)', marginBottom: '2rem', textAlign: 'left' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}>
@@ -227,7 +273,9 @@ function AnalyzeContent() {
                         </div>
                         <div style={{ display: 'flex', gap: '1rem' }}>
                             <button className="btn btn-outline" style={{ flex: 1 }} onClick={() => setShowPaywall(false)}>Maybe Later</button>
-                            <button className="btn btn-primary" style={{ flex: 1 }} onClick={handleUpgrade}><CreditCard size={20} /> Upgrade for ₹299</button>
+                            <button className="btn btn-primary" style={{ flex: 1 }} onClick={handleUpgrade}>
+                                <CreditCard size={20} /> Upgrade for ₹{searchParams.get('plan') === 'premium' ? '499' : '299'}
+                            </button>
                         </div>
                         <p style={{ marginTop: '1.5rem', fontSize: '0.875rem', color: 'var(--primary)', fontWeight: 600 }}>🔥 Launch Offer: 70% OFF!</p>
                     </motion.div>
